@@ -1,4 +1,5 @@
 const { createServer } = require('http');
+const { networkInterfaces } = require('os');
 
 const server = createServer();
 const { Server } = require('socket.io');
@@ -7,7 +8,9 @@ const debug = require('debug')('shared-schema');
 const jsondiffpatch = require('jsondiffpatch').create();
 
 const NUMERIC_DIFFERENCE = -8;
+const PORT = process.env.PORT || 3000;
 
+// Configure numeric filter for jsonpatch
 const numericPatchFilter = (context) => {
   if (context.delta && Array.isArray(context.delta) && context.delta[2] === NUMERIC_DIFFERENCE) {
     context.setResult(context.left + context.delta[1]).exit();
@@ -52,4 +55,24 @@ io.on('connection', (socket) => {
   });
 });
 
-io.listen(3000);
+io.listen(PORT);
+
+const getAdressFromInterfaces = () => {
+  const nets = networkInterfaces();
+  const results = {};
+
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        if (!results[name]) {
+          results[name] = [];
+        }
+        results[name].push(net.address);
+      }
+    }
+  }
+  return results;
+};
+
+const results = getAdressFromInterfaces();
+debug(`[SERVER] listening on ws://${results.en0[0]}:${PORT}`);
