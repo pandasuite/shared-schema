@@ -1,0 +1,29 @@
+{
+  "name": "shared-schema",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "DEBUG=shared-schema node --max-old-space-size=4096 index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pandasuite/shared-schema.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pandasuite/shared-schema/issues"
+  },
+  "homepage": "https://github.com/pandasuite/shared-schema#readme",
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.24.2"
+  },
+  "dependencies": {
+    "debug": "^4.3.2",
+    "jsondiffpatch": "^0.4.1",
+    "socket.io": "^4.2.0"
+  }
+}
