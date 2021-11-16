@@ -57,22 +57,16 @@ io.on('connection', (socket) => {
 
 io.listen(PORT);
 
-const getAdressFromInterfaces = () => {
+const printAdressesFromInterfaces = () => {
   const nets = networkInterfaces();
-  const results = {};
 
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
       if (net.family === 'IPv4' && !net.internal) {
-        if (!results[name]) {
-          results[name] = [];
-        }
-        results[name].push(net.address);
+        debug(`[SERVER] listening on ws://${net.address}:${PORT}`);
       }
     }
   }
-  return results;
 };
 
-const results = getAdressFromInterfaces();
-debug(`[SERVER] listening on ws://${results.en0[0]}:${PORT}`);
+printAdressesFromInterfaces();
