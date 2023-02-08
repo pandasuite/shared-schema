@@ -46,9 +46,9 @@
     "github": {
       "release": true,
       "assets": [
-        "shared-schema-linux",
-        "shared-schema-macos",
-        "shared-schema-win.exe"
+        "dist/shared-schema-linux",
+        "dist/shared-schema-macos",
+        "dist/shared-schema-win.exe"
       ]
     }
   }
