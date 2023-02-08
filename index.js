@@ -1,5 +1,6 @@
 const { createServer } = require('http');
 const { networkInterfaces } = require('os');
+const { Bonjour } = require('bonjour-service');
 
 const server = createServer();
 const { Server } = require('socket.io');
@@ -69,4 +70,14 @@ const printAdressesFromInterfaces = () => {
   }
 };
 
+const advertiseServer = () => {
+  const instance = new Bonjour(undefined, (e) => {
+    if (e) {
+      debug('[BONJOUR] error', e);
+    }
+  });
+  instance.publish({ name: 'PandaSuite Shared Schema', type: 'http', port: PORT });
+};
+
 printAdressesFromInterfaces();
+advertiseServer();
