@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const http = require('http');
 const https = require('https');
 const { networkInterfaces } = require('os');
@@ -6,8 +7,8 @@ const { Bonjour } = require('bonjour-service');
 
 const server = http.createServer();
 const serverHttps = https.createServer({
-  key: fs.readFileSync('certs/privkey.pem'),
-  cert: fs.readFileSync('certs/fullchain.pem'),
+  key: fs.readFileSync(path.join(__dirname, 'certs/privkey.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'certs/fullchain.pem')),
 });
 const { Server } = require('socket.io');
 
