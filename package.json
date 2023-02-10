@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "DEBUG=shared-schema node --max-old-space-size=4096 index.js",
+    "start": "DEBUG=* node --max-old-space-size=4096 index.js",
     "build": "pkg .",
-    "release": "npm run build && release-it --no-npm.publish"
+    "release": "npm run build && release-it --no-npm.publish",
+    "renew-certs": "certbot certonly --manual --preferred-challenges dns -d shared-schema.panda.st --agree-tos"
   },
   "repository": {
     "type": "git",
@@ -29,7 +30,8 @@
     "bonjour-service": "^1.1.0",
     "debug": "^4.3.2",
     "jsondiffpatch": "^0.4.1",
-    "socket.io": "^4.2.0"
+    "socket.io": "^4.2.0",
+    "supports-color": "^9.3.1"
   },
   "bin": {
     "shared-schema": "index.js"

@@ -1,8 +1,14 @@
-const { createServer } = require('http');
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const { networkInterfaces } = require('os');
 const { Bonjour } = require('bonjour-service');
 
-const server = createServer();
+const server = http.createServer();
+const serverHttps = https.createServer({
+  key: fs.readFileSync('certs/privkey.pem'),
+  cert: fs.readFileSync('certs/fullchain.pem'),
+});
 const { Server } = require('socket.io');
 
 const debugServer = require('debug')('SERVER');
@@ -12,6 +18,7 @@ const jsondiffpatch = require('jsondiffpatch').create();
 
 const NUMERIC_DIFFERENCE = -8;
 const PORT = process.env.PORT || 3000;
+const PORT_HTTPS = process.env.PORT_HTTPS || 3443;
 
 debugServer.enabled = true;
 
@@ -26,12 +33,15 @@ jsondiffpatch.processor.pipes.patch.before('trivial', numericPatchFilter);
 
 const schema = {};
 
-const io = new Server(server, {
+const io = new Server({
   path: '/',
   cors: {
     origin: '*',
   },
 });
+
+io.attach(server);
+io.attach(serverHttps);
 
 io.on('connection', (socket) => {
   const { room } = socket.handshake.query;
@@ -60,7 +70,8 @@ io.on('connection', (socket) => {
   });
 });
 
-io.listen(PORT);
+server.listen(PORT);
+serverHttps.listen(PORT_HTTPS);
 
 const printAdressesFromInterfaces = () => {
   const nets = networkInterfaces();
@@ -72,6 +83,7 @@ const printAdressesFromInterfaces = () => {
       }
     }
   }
+  debugServer(`listening on wss://shared-schema.panda.st:${PORT_HTTPS}`);
 };
 
 const advertiseServer = () => {
@@ -81,6 +93,7 @@ const advertiseServer = () => {
     }
   });
   instance.publish({ name: 'PandaSuite Shared Schema', type: 'http', port: PORT });
+  instance.publish({ name: 'PandaSuite Shared Schema', type: 'https', port: PORT_HTTPS });
 };
 
 printAdressesFromInterfaces();
