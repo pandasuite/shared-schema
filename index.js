@@ -5,11 +5,15 @@ const { Bonjour } = require('bonjour-service');
 const server = createServer();
 const { Server } = require('socket.io');
 
-const debug = require('debug')('shared-schema');
+const debugServer = require('debug')('SERVER');
+const debugClient = require('debug')('CLIENT');
+const debugBonjour = require('debug')('BONJOUR');
 const jsondiffpatch = require('jsondiffpatch').create();
 
 const NUMERIC_DIFFERENCE = -8;
 const PORT = process.env.PORT || 3000;
+
+debugServer.enabled = true;
 
 // Configure numeric filter for jsonpatch
 const numericPatchFilter = (context) => {
@@ -32,7 +36,7 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   const { room } = socket.handshake.query;
 
-  debug('[CLIENT] connected', `socketId: ${socket.id} room: ${room}`);
+  debugClient('connected', `socketId: ${socket.id} room: ${room}`);
   if (!schema[room]) {
     schema[room] = {};
   }
@@ -41,18 +45,18 @@ io.on('connection', (socket) => {
   socket.emit('schema', schema[room]);
 
   socket.on('schema', (arg) => {
-    debug('[CLIENT] patch schema', arg);
+    debugClient('patch schema', arg);
     try {
       jsondiffpatch.patch(schema[room], arg);
-      debug('[CLIENT] new schema', schema[room]);
+      debugClient('new schema', schema[room]);
       io.to(room).emit('schema', schema[room]);
     } catch (error) {
-      debug('[CLIENT] error', error);
+      debugClient('error', error);
     }
   });
 
   socket.on('disconnect', (reason) => {
-    debug('[CLIENT] disconnected', `socketId: ${socket.id} ${reason}`);
+    debugClient('disconnected', `socketId: ${socket.id} ${reason}`);
   });
 });
 
@@ -64,7 +68,7 @@ const printAdressesFromInterfaces = () => {
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
       if (net.family === 'IPv4' && !net.internal) {
-        debug(`[SERVER] listening on ws://${net.address}:${PORT}`);
+        debugServer(`listening on ws://${net.address}:${PORT}`);
       }
     }
   }
@@ -73,7 +77,7 @@ const printAdressesFromInterfaces = () => {
 const advertiseServer = () => {
   const instance = new Bonjour(undefined, (e) => {
     if (e) {
-      debug('[BONJOUR] error', e);
+      debugBonjour('error', e);
     }
   });
   instance.publish({ name: 'PandaSuite Shared Schema', type: 'http', port: PORT });
