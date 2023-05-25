@@ -2,14 +2,32 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
+const crypto = require('crypto');
+const { program } = require('commander');
+
 const { networkInterfaces } = require('os');
 const { Bonjour } = require('bonjour-service');
 
+program
+  .name('shared-schema')
+  .option('-k, --key <file>')
+  .option('-c, --cert <file>');
+
+program.parse();
+
+const {
+  key: keyPath = 'certs/privkey.pem',
+  cert: certPath = 'certs/fullchain.pem',
+} = program.opts();
+
+const cert = new crypto.X509Certificate(fs.readFileSync(path.resolve(certPath)));
+
 const server = http.createServer();
-const serverHttps = https.createServer({
-  key: fs.readFileSync(path.join(__dirname, 'certs/privkey.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'certs/fullchain.pem')),
+let serverHttps = https.createServer({
+  key: fs.readFileSync(path.resolve(keyPath)),
+  cert: fs.readFileSync(path.resolve(certPath)),
 });
+
 const { Server } = require('socket.io');
 
 const debugServer = require('debug')('SERVER');
@@ -22,6 +40,11 @@ const PORT = process.env.PORT || 3000;
 const PORT_HTTPS = process.env.PORT_HTTPS || 3443;
 
 debugServer.enabled = true;
+
+if (Date.parse(cert.validTo) < Date.now()) {
+  debugServer('⚠️ Certificate is not valid anymore ⚠️ ');
+  serverHttps = null;
+}
 
 // Configure numeric filter for jsonpatch
 const numericPatchFilter = (context) => {
@@ -42,7 +65,9 @@ const io = new Server({
 });
 
 io.attach(server);
-io.attach(serverHttps);
+if (serverHttps) {
+  io.attach(serverHttps);
+}
 
 io.on('connection', (socket) => {
   const { room } = socket.handshake.query;
@@ -72,7 +97,9 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT);
-serverHttps.listen(PORT_HTTPS);
+if (serverHttps) {
+  serverHttps.listen(PORT_HTTPS);
+}
 
 const printAdressesFromInterfaces = () => {
   const nets = networkInterfaces();
@@ -84,7 +111,9 @@ const printAdressesFromInterfaces = () => {
       }
     }
   }
-  debugServer(`listening on wss://shared-schema.panda.st:${PORT_HTTPS}`);
+  if (serverHttps) {
+    debugServer(`listening on wss://${cert.subject.replace('CN=', '')}:${PORT_HTTPS}`);
+  }
 };
 
 const advertiseServer = () => {
@@ -94,7 +123,9 @@ const advertiseServer = () => {
     }
   });
   instance.publish({ name: 'PandaSuite Shared Schema', type: 'http', port: PORT });
-  instance.publish({ name: 'PandaSuite Shared Schema', type: 'https', port: PORT_HTTPS });
+  if (serverHttps) {
+    instance.publish({ name: 'PandaSuite Shared Schema', type: 'https', port: PORT_HTTPS });
+  }
 };
 
 printAdressesFromInterfaces();

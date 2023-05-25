@@ -6,6 +6,7 @@
   "scripts": {
     "start": "DEBUG=* node --max-old-space-size=4096 index.js",
     "build": "pkg .",
+    "certs": "curl https://shared-schema.panda.st/privkey.pem -o certs/privkey.pem && curl https://shared-schema.panda.st/fullchain.pem -o certs/fullchain.pem",
     "release": "npm run build && release-it --no-npm.publish",
     "renew-certs": "certbot certonly --manual --preferred-challenges dns -d shared-schema.panda.st --agree-tos"
   },
@@ -28,6 +29,7 @@
   },
   "dependencies": {
     "bonjour-service": "^1.1.0",
+    "commander": "^10.0.1",
     "debug": "^4.3.2",
     "jsondiffpatch": "^0.4.1",
     "socket.io": "^4.2.0"
@@ -37,9 +39,10 @@
   },
   "pkg": {
     "targets": [
-      "node14-macos-x64",
-      "node14-linux-x64",
-      "node14-win-x64"
+      "node16-macos-x64",
+      "node16-macos-arm64",
+      "node16-linux-x64",
+      "node16-win-x64"
     ],
     "outputPath": "dist",
     "assets": [
