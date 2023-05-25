@@ -39,7 +39,6 @@
   "pkg": {
     "targets": [
       "node16-macos-x64",
-      "node16-macos-arm64",
       "node16-linux-x64",
       "node16-win-x64"
     ],
@@ -52,11 +51,13 @@
     "github": {
       "release": true,
       "assets": [
-        "dist/shared-schema-linux-x64",
-        "dist/shared-schema-macos-x64",
-        "dist/shared-schema-macos-arm64",
-        "dist/shared-schema-win-x64.exe"
+        "dist/shared-schema-linux",
+        "dist/shared-schema-macos",
+        "dist/shared-schema-win.exe"
       ]
+    },
+    "git": {
+      "requireCleanWorkingDir": false
     }
   }
 }
