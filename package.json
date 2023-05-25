@@ -7,7 +7,7 @@
     "start": "DEBUG=* node --max-old-space-size=4096 index.js",
     "build": "pkg .",
     "certs": "curl https://shared-schema.panda.st/privkey.pem -o certs/privkey.pem && curl https://shared-schema.panda.st/fullchain.pem -o certs/fullchain.pem",
-    "release": "npm run build && release-it --no-npm.publish"
+    "release": "npm run build && release-it --no-npm.publish --ci"
   },
   "repository": {
     "type": "git",
@@ -52,9 +52,10 @@
     "github": {
       "release": true,
       "assets": [
-        "dist/shared-schema-linux",
-        "dist/shared-schema-macos",
-        "dist/shared-schema-win.exe"
+        "dist/shared-schema-linux-x64",
+        "dist/shared-schema-macos-x64",
+        "dist/shared-schema-macos-arm64",
+        "dist/shared-schema-win-x64.exe"
       ]
     }
   }

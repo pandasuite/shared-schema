@@ -23,8 +23,4 @@ jobs:
       - name: Download new certs
         run: npm run certs
       - name: Build
-        run: npm run build
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/*
+        run: npm run release
