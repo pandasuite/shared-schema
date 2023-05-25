@@ -15,17 +15,29 @@ program
 
 program.parse();
 
-const {
-  key: keyPath = 'certs/privkey.pem',
-  cert: certPath = 'certs/fullchain.pem',
+let {
+  key: keyPath,
+  cert: certPath,
 } = program.opts();
 
-const cert = new crypto.X509Certificate(fs.readFileSync(path.resolve(certPath)));
+if (!keyPath) {
+  keyPath = path.join(__dirname, 'certs/privkey.pem');
+} else {
+  keyPath = path.resolve(keyPath);
+}
+
+if (!certPath) {
+  certPath = path.join(__dirname, 'certs/fullchain.pem');
+} else {
+  certPath = path.resolve(certPath);
+}
+
+const cert = new crypto.X509Certificate(fs.readFileSync(certPath));
 
 const server = http.createServer();
 let serverHttps = https.createServer({
-  key: fs.readFileSync(path.resolve(keyPath)),
-  cert: fs.readFileSync(path.resolve(certPath)),
+  key: fs.readFileSync(keyPath),
+  cert: fs.readFileSync(certPath),
 });
 
 const { Server } = require('socket.io');
