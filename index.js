@@ -52,6 +52,7 @@ const PORT = process.env.PORT || 3000;
 const PORT_HTTPS = process.env.PORT_HTTPS || 3443;
 
 debugServer.enabled = true;
+debugClient.enabled = true;
 
 if (Date.parse(cert.validTo) < Date.now()) {
   debugServer('⚠️ Certificate is not valid anymore ⚠️ ');
