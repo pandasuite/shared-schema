@@ -142,4 +142,4 @@ const advertiseServer = () => {
 };
 
 printAdressesFromInterfaces();
-advertiseServer();
+// advertiseServer();
