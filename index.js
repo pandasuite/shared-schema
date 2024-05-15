@@ -15,10 +15,7 @@ program
 
 program.parse();
 
-let {
-  key: keyPath,
-  cert: certPath,
-} = program.opts();
+let { key: keyPath, cert: certPath } = program.opts();
 
 if (!keyPath) {
   keyPath = path.join(__dirname, 'certs/privkey.pem');
@@ -61,7 +58,11 @@ if (Date.parse(cert.validTo) < Date.now()) {
 
 // Configure numeric filter for jsonpatch
 const numericPatchFilter = (context) => {
-  if (context.delta && Array.isArray(context.delta) && context.delta[2] === NUMERIC_DIFFERENCE) {
+  if (
+    context.delta &&
+    Array.isArray(context.delta) &&
+    context.delta[2] === NUMERIC_DIFFERENCE
+  ) {
     context.setResult(context.left + context.delta[1]).exit();
   }
 };
@@ -125,7 +126,9 @@ const printAdressesFromInterfaces = () => {
     }
   }
   if (serverHttps) {
-    debugServer(`listening on wss://${cert.subject.replace('CN=', '')}:${PORT_HTTPS}`);
+    debugServer(
+      `listening on wss://${cert.subject.replace('CN=', '')}:${PORT_HTTPS}`
+    );
   }
 };
 
@@ -135,9 +138,17 @@ const advertiseServer = () => {
       debugBonjour('error', e);
     }
   });
-  instance.publish({ name: 'PandaSuite Shared Schema', type: 'http', port: PORT });
+  instance.publish({
+    name: 'PandaSuite Shared Schema',
+    type: 'http',
+    port: PORT,
+  });
   if (serverHttps) {
-    instance.publish({ name: 'PandaSuite Shared Schema', type: 'https', port: PORT_HTTPS });
+    instance.publish({
+      name: 'PandaSuite Shared Schema',
+      type: 'https',
+      port: PORT_HTTPS,
+    });
   }
 };
 
