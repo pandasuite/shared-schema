@@ -7,7 +7,8 @@
     "start": "DEBUG=* node --max-old-space-size=4096 index.js",
     "build": "pkg .",
     "certs": "curl https://shared-schema.panda.st/privkey.pem -o certs/privkey.pem && curl https://shared-schema.panda.st/fullchain.pem -o certs/fullchain.pem",
-    "release": "npm run build && release-it --no-npm.publish --ci"
+    "release": "npm run build && release-it --no-npm.publish --ci",
+    "serial-port": "socat -d -d pty,raw,nonblock,echo=0,link=ttyV0 pty,raw,nonblock,echo=0,link=ttyV1"
   },
   "repository": {
     "type": "git",
@@ -27,10 +28,12 @@
     "release-it": "^15.6.0"
   },
   "dependencies": {
+    "@serialport/parser-readline": "^12.0.0",
     "bonjour-service": "^1.1.0",
     "commander": "^10.0.1",
     "debug": "^4.3.2",
     "jsondiffpatch": "^0.4.1",
+    "serialport": "^12.0.0",
     "socket.io": "^4.2.0"
   },
   "bin": {
@@ -44,7 +47,8 @@
     ],
     "outputPath": "dist",
     "assets": [
-      "certs/*"
+      "certs/*",
+      "node_modules/@serialport/bindings-cpp/**/*"
     ]
   },
   "release-it": {

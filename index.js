@@ -6,16 +6,27 @@ const crypto = require('crypto');
 const { program } = require('commander');
 
 const { networkInterfaces } = require('os');
-const { Bonjour } = require('bonjour-service');
+// const { Bonjour } = require('bonjour-service');
 
 program
   .name('shared-schema')
   .option('-k, --key <file>')
-  .option('-c, --cert <file>');
+  .option('-c, --cert <file>')
+  .option(
+    '-s, --serial-inspect [ports]',
+    'enable serial port inspection with optional list of ports',
+    undefined,
+  )
+  .option(
+    '-d, --delimiter <delimiter>',
+    'delimiter for serial port data',
+    '\n',
+  );
 
 program.parse();
 
 let { key: keyPath, cert: certPath } = program.opts();
+const { serialInspect, delimiter } = program.opts();
 
 if (!keyPath) {
   keyPath = path.join(__dirname, 'certs/privkey.pem');
@@ -41,8 +52,10 @@ const { Server } = require('socket.io');
 
 const debugServer = require('debug')('SERVER');
 const debugClient = require('debug')('CLIENT');
-const debugBonjour = require('debug')('BONJOUR');
+// const debugBonjour = require('debug')('BONJOUR');
 const jsondiffpatch = require('jsondiffpatch').create();
+
+const { setupSerialPorts } = require('./src/serialManager');
 
 const NUMERIC_DIFFERENCE = -8;
 const PORT = process.env.PORT || 3000;
@@ -127,30 +140,35 @@ const printAdressesFromInterfaces = () => {
   }
   if (serverHttps) {
     debugServer(
-      `listening on wss://${cert.subject.replace('CN=', '')}:${PORT_HTTPS}`
+      `listening on wss://${cert.subject.replace('CN=', '')}:${PORT_HTTPS}`,
     );
   }
 };
 
-const advertiseServer = () => {
-  const instance = new Bonjour(undefined, (e) => {
-    if (e) {
-      debugBonjour('error', e);
-    }
-  });
-  instance.publish({
-    name: 'PandaSuite Shared Schema',
-    type: 'http',
-    port: PORT,
-  });
-  if (serverHttps) {
-    instance.publish({
-      name: 'PandaSuite Shared Schema',
-      type: 'https',
-      port: PORT_HTTPS,
-    });
-  }
-};
+// const advertiseServer = () => {
+//   const instance = new Bonjour(undefined, (e) => {
+//     if (e) {
+//       debugBonjour('error', e);
+//     }
+//   });
+//   instance.publish({
+//     name: 'PandaSuite Shared Schema',
+//     type: 'http',
+//     port: PORT,
+//   });
+//   if (serverHttps) {
+//     instance.publish({
+//       name: 'PandaSuite Shared Schema',
+//       type: 'https',
+//       port: PORT_HTTPS,
+//     });
+//   }
+// };
 
 printAdressesFromInterfaces();
 // advertiseServer();
+
+if (serialInspect !== undefined) {
+  const ports = serialInspect.split(',');
+  setupSerialPorts(schema, io, delimiter, ports);
+}
