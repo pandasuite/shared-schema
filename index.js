@@ -17,16 +17,13 @@ program
     'enable serial port inspection with optional list of ports',
     undefined,
   )
-  .option(
-    '-d, --delimiter <delimiter>',
-    'delimiter for serial port data',
-    '\n',
-  );
+  .option('-d, --delimiter <delimiter>', 'delimiter for serial port data', '\n')
+  .option('-t, --tuio [port]', 'enable tuio udp server', 3333);
 
 program.parse();
 
 let { key: keyPath, cert: certPath } = program.opts();
-const { serialInspect, delimiter } = program.opts();
+const { serialInspect, delimiter, tuio } = program.opts();
 
 if (!keyPath) {
   keyPath = path.join(__dirname, 'certs/privkey.pem');
@@ -56,6 +53,7 @@ const debugClient = require('debug')('CLIENT');
 const jsondiffpatch = require('jsondiffpatch').create();
 
 const { setupSerialPorts } = require('./src/serialManager');
+const { setupTuio } = require('./src/tuioManager');
 
 const NUMERIC_DIFFERENCE = -8;
 const PORT = process.env.PORT || 3000;
@@ -171,4 +169,8 @@ printAdressesFromInterfaces();
 if (serialInspect !== undefined) {
   const ports = serialInspect.split(',');
   setupSerialPorts(schema, io, delimiter, ports);
+}
+
+if (tuio !== undefined) {
+  setupTuio(schema, io, tuio);
 }

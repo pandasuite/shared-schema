@@ -33,6 +33,7 @@
     "commander": "^10.0.1",
     "debug": "^4.3.2",
     "jsondiffpatch": "^0.4.1",
+    "osc": "^2.4.5",
     "serialport": "^12.0.0",
     "socket.io": "^4.2.0"
   },

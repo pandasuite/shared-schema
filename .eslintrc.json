@@ -10,6 +10,7 @@
   },
   "rules": {
     "no-restricted-syntax": "off",
-    "operator-linebreak": "off"
+    "operator-linebreak": "off",
+    "indent": "off"
   }
 }
