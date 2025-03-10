@@ -37,8 +37,12 @@ const removeInactive = (list, activeSessionIds) => {
   return list.length !== initialLength;
 };
 
-const setupTuio = async (schema, io, port) => {
+const setupTuio = async (schema, io, port, options = {}) => {
   const tuio = {};
+  const emitThrottleMs = options.emitThrottleMs || 16;
+  let lastEmitTime = 0;
+
+  debugTuio(`TUIO set up with a throttle of ${emitThrottleMs}ms`);
 
   try {
     const udpPort = new osc.UDPPort({
@@ -152,10 +156,14 @@ const setupTuio = async (schema, io, port) => {
           if (tuio[currentType].fseq !== frameSequence) {
             tuio[currentType].fseq = frameSequence;
 
-            for (const room in schema) {
-              if (Object.prototype.hasOwnProperty.call(schema, room)) {
-                io.to(room).emit('schema', tuio);
+            const currentTime = Date.now();
+            if (currentTime - lastEmitTime >= emitThrottleMs) {
+              for (const room in schema) {
+                if (Object.prototype.hasOwnProperty.call(schema, room)) {
+                  io.to(room).emit('schema', tuio);
+                }
               }
+              lastEmitTime = currentTime;
             }
           }
           break;

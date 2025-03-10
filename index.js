@@ -18,12 +18,17 @@ program
     undefined,
   )
   .option('-d, --delimiter <delimiter>', 'delimiter for serial port data', '\n')
-  .option('-t, --tuio [port]', 'enable tuio udp server', 3333);
+  .option('-t, --tuio [port]', 'enable tuio udp server', 3333)
+  .option(
+    '--tuio-throttle <ms>',
+    'throttle tuio emission rate in milliseconds',
+    16,
+  );
 
 program.parse();
 
 let { key: keyPath, cert: certPath } = program.opts();
-const { serialInspect, delimiter, tuio } = program.opts();
+const { serialInspect, delimiter, tuio, tuioThrottle } = program.opts();
 
 if (!keyPath) {
   keyPath = path.join(__dirname, 'certs/privkey.pem');
@@ -172,5 +177,5 @@ if (serialInspect !== undefined) {
 }
 
 if (tuio !== undefined) {
-  setupTuio(schema, io, tuio);
+  setupTuio(schema, io, tuio, { emitThrottleMs: tuioThrottle });
 }
