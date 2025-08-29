@@ -28,6 +28,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           sudo snap install certbot --classic
+          sudo snap set certbot trust-plugin-with-root=ok
           sudo snap install certbot-dns-cloudflare
           echo "dns_cloudflare_api_token = $CLOUDFLARE_API_TOKEN" > /tmp/cloudflare.ini
           chmod 600 /tmp/cloudflare.ini
