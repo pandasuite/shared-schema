@@ -127,16 +127,27 @@ node index.js --serial-inspect /dev/ttyUSB0,/dev/ttyACM0
 ./shared-schema-macos --tuio 4444 --tuio-throttle 30
 ```
 
+### Update SSL Certificates
+
+```bash
+# Download latest SSL certificates from GitHub releases
+./shared-schema-macos --update-certs
+
+# Then start the server normally
+./shared-schema-macos
+```
+
 ## 🛠 Command Line Options
 
-| Option                     | Description                   | Default               |
-| -------------------------- | ----------------------------- | --------------------- |
-| `--key <file>`             | Path to SSL private key       | `certs/privkey.pem`   |
-| `--cert <file>`            | Path to SSL certificate       | `certs/fullchain.pem` |
-| `--serial-inspect [ports]` | Enable serial port monitoring | disabled              |
-| `--delimiter <delim>`      | Serial data delimiter         | `\n`                  |
-| `--tuio [port]`            | Enable TUIO UDP server        | disabled              |
-| `--tuio-throttle <ms>`     | TUIO emission throttle        | 16ms                  |
+| Option                     | Description                      | Default               |
+| -------------------------- | -------------------------------- | --------------------- |
+| `--key <file>`             | Path to SSL private key          | `certs/privkey.pem`   |
+| `--cert <file>`            | Path to SSL certificate          | `certs/fullchain.pem` |
+| `--update-certs`           | Download latest SSL certificates | -                     |
+| `--serial-inspect [ports]` | Enable serial port monitoring    | disabled              |
+| `--delimiter <delim>`      | Serial data delimiter            | `\n`                  |
+| `--tuio [port]`            | Enable TUIO UDP server           | disabled              |
+| `--tuio-throttle <ms>`     | TUIO emission throttle           | 16ms                  |
 
 ### Environment Variables
 
@@ -155,10 +166,8 @@ node index.js --serial-inspect /dev/ttyUSB0,/dev/ttyACM0
    # For Node.js version
    npm run certs
 
-   # For executables, download manually:
-   # mkdir -p certs
-   # curl -L https://raw.githubusercontent.com/pandasuite/shared-schema/master/certs/privkey.pem -o certs/privkey.pem
-   # curl -L https://raw.githubusercontent.com/pandasuite/shared-schema/master/certs/fullchain.pem -o certs/fullchain.pem
+   # For executables
+   ./shared-schema-macos --update-certs
    ```
 
 2. **Configure local DNS** (add to `/etc/hosts`):
@@ -227,7 +236,6 @@ shared-schema --serial-inspect /dev/ttyUSB0 --delimiter ","
    ./shared-schema-macos --serial-inspect /dev/ttyUSB0
    ```
 3. **In PandaSuite Studio**:
-
    - Add the **App-to-App component**
    - Configure it to connect to your local server
    - Set a room name for your project
@@ -264,11 +272,9 @@ shared-schema --tuio --tuio-throttle 30
    ```
 
 2. **Configure HTTPS** (recommended for web apps):
-
    - Follow the [HTTPS setup](#https-setup) to use `shared-schema.panda.st`
 
 3. **In PandaSuite Studio**:
-
    - Add the **App-to-App component**
    - Set server URL to `wss://shared-schema.panda.st:3443`
    - Configure a room name

@@ -23,32 +23,17 @@ program
     '--tuio-throttle <ms>',
     'throttle tuio emission rate in milliseconds',
     16,
+  )
+  .option(
+    '--update-certs',
+    'download latest SSL certificates from GitHub releases',
   );
 
 program.parse();
 
 let { key: keyPath, cert: certPath } = program.opts();
-const { serialInspect, delimiter, tuio, tuioThrottle } = program.opts();
-
-if (!keyPath) {
-  keyPath = path.join(__dirname, 'certs/privkey.pem');
-} else {
-  keyPath = path.resolve(keyPath);
-}
-
-if (!certPath) {
-  certPath = path.join(__dirname, 'certs/fullchain.pem');
-} else {
-  certPath = path.resolve(certPath);
-}
-
-const cert = new crypto.X509Certificate(fs.readFileSync(certPath));
-
-const server = http.createServer();
-let serverHttps = https.createServer({
-  key: fs.readFileSync(keyPath),
-  cert: fs.readFileSync(certPath),
-});
+const { serialInspect, delimiter, tuio, tuioThrottle, updateCerts } =
+  program.opts();
 
 const { Server } = require('socket.io');
 
@@ -57,8 +42,49 @@ const debugClient = require('debug')('CLIENT');
 // const debugBonjour = require('debug')('BONJOUR');
 const jsondiffpatch = require('jsondiffpatch').create();
 
+const {
+  downloadCertificates,
+  getCertsDirectory,
+} = require('./src/certManager');
 const { setupSerialPorts } = require('./src/serialManager');
 const { setupTuio } = require('./src/tuioManager');
+
+// Handle certificate update command
+if (updateCerts) {
+  downloadCertificates().then((success) => {
+    process.exit(success ? 0 : 1);
+  });
+}
+
+// Set default certificate paths
+if (!keyPath) {
+  keyPath = path.join(getCertsDirectory(), 'privkey.pem');
+} else {
+  keyPath = path.resolve(keyPath);
+}
+
+if (!certPath) {
+  certPath = path.join(getCertsDirectory(), 'fullchain.pem');
+} else {
+  certPath = path.resolve(certPath);
+}
+
+// Create HTTP and HTTPS servers
+const server = http.createServer();
+let serverHttps;
+let cert;
+
+try {
+  cert = new crypto.X509Certificate(fs.readFileSync(certPath));
+  serverHttps = https.createServer({
+    key: fs.readFileSync(keyPath),
+    cert: fs.readFileSync(certPath),
+  });
+} catch (error) {
+  debugServer('⚠️ SSL certificates not found or invalid');
+  debugServer('💡 Run with --update-certs to download fresh certificates');
+  serverHttps = null;
+}
 
 const NUMERIC_DIFFERENCE = -8;
 const PORT = process.env.PORT || 3000;
@@ -67,7 +93,7 @@ const PORT_HTTPS = process.env.PORT_HTTPS || 3443;
 debugServer.enabled = true;
 debugClient.enabled = true;
 
-if (Date.parse(cert.validTo) < Date.now()) {
+if (cert && Date.parse(cert.validTo) < Date.now()) {
   debugServer('⚠️ Certificate is not valid anymore ⚠️ ');
   serverHttps = null;
 }
@@ -141,10 +167,12 @@ const printAdressesFromInterfaces = () => {
       }
     }
   }
-  if (serverHttps) {
+  if (serverHttps && cert) {
     debugServer(
       `listening on wss://${cert.subject.replace('CN=', '')}:${PORT_HTTPS}`,
     );
+  } else if (serverHttps) {
+    debugServer(`listening on wss://localhost:${PORT_HTTPS}`);
   }
 };
 
