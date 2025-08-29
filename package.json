@@ -6,7 +6,7 @@
   "scripts": {
     "start": "DEBUG=* node --max-old-space-size=4096 index.js",
     "build": "pkg .",
-    "certs": "curl https://shared-schema.panda.st/privkey.pem -o certs/privkey.pem && curl https://shared-schema.panda.st/fullchain.pem -o certs/fullchain.pem",
+    "certs": "scripts/download-certs.sh",
     "release": "npm run build && release-it --no-npm.publish --ci",
     "serial-port": "socat -d -d pty,raw,nonblock,echo=0,link=ttyV0 pty,raw,nonblock,echo=0,link=ttyV1"
   },
