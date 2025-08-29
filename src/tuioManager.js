@@ -1,5 +1,6 @@
 const osc = require('osc');
 const debugTuio = require('debug')('TUIO');
+const debugUdp = require('debug')('TUIO:UDP');
 
 const radiansToDegrees = (radians) => radians * (180 / Math.PI);
 
@@ -51,8 +52,26 @@ const setupTuio = async (schema, io, port, options = {}) => {
       metadata: true,
     });
 
+    udpPort.on('ready', () => {
+      debugUdp(
+        `UDP port ready on ${udpPort.options.localAddress}:${udpPort.options.localPort}`,
+      );
+    });
+
+    udpPort.on('error', (err) => {
+      debugUdp(`UDP error: ${err.message}`);
+    });
+
+    udpPort.on('close', () => {
+      debugUdp('UDP port closed');
+    });
+
     udpPort.on('message', (oscMsg) => {
       const { address, args } = oscMsg;
+
+      debugUdp(
+        `Received: ${address} [${args.map((arg) => arg.value).join(', ')}]`,
+      );
 
       if (args.length === 0) return;
 
