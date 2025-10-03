@@ -46,9 +46,19 @@ const setupTuio = async (schema, io, port, options = {}) => {
   debugTuio(`TUIO set up with a throttle of ${emitThrottleMs}ms`);
 
   try {
+    const parsedPort =
+      typeof port === 'number'
+        ? port
+        : typeof port === 'string'
+        ? Number.parseInt(port, 10)
+        : NaN;
+
+    const localPort =
+      Number.isInteger(parsedPort) && parsedPort > 0 ? parsedPort : 3333;
+
     const udpPort = new osc.UDPPort({
       localAddress: '0.0.0.0',
-      localPort: port instanceof Number ? port : 3333,
+      localPort,
       metadata: true,
     });
 
