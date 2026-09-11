@@ -20,25 +20,29 @@ const send = (port, text) =>
     });
   });
 
-const nextEmit = (emitted, count) =>
-  new Promise((resolve) => {
+const waitForEmits = (emitted, count, deadlineMs = 1000) =>
+  new Promise((resolve, reject) => {
+    const start = Date.now();
     const check = () => {
       if (emitted.length >= count) resolve();
+      else if (Date.now() - start > deadlineMs)
+        reject(new Error(`only ${emitted.length} of ${count} emits`));
       else setTimeout(check, 5);
     };
     check();
   });
 
-test('a datagram lands in every room and a repeat is still a change', async () => {
+test('a datagram lands in every room and a repeat is still a change', async (t) => {
   const schema = { roomA: {}, roomB: {} };
   const emitted = [];
   const io = fakeIo(emitted);
 
   const sockets = await setupUdp(schema, io, ['0']);
+  t.after(() => sockets.forEach((socket) => socket.close()));
   const { port } = sockets[0].address();
 
   await send(port, '1,ON\r\n');
-  await nextEmit(emitted, 2);
+  await waitForEmits(emitted, 2);
 
   assert.deepEqual(schema.roomA.udpData[port], {
     message: '1,ON',
@@ -56,10 +60,29 @@ test('a datagram lands in every room and a repeat is still a change', async () =
   assert.equal(emitted[0].payload, schema.roomA);
 
   await send(port, '1,ON');
-  await nextEmit(emitted, 4);
+  await waitForEmits(emitted, 4);
 
   assert.equal(schema.roomA.udpData[port].seq, 2);
   assert.equal(schema.roomA.udpData[port].message, '1,ON');
+});
 
-  sockets.forEach((socket) => socket.close());
+test('a bare trailing CR is removed like LF and CRLF', async (t) => {
+  const schema = { room: {} };
+  const emitted = [];
+
+  const sockets = await setupUdp(schema, fakeIo(emitted), ['0']);
+  t.after(() => sockets.forEach((socket) => socket.close()));
+  const { port } = sockets[0].address();
+
+  await send(port, '1,OFF\r');
+  await waitForEmits(emitted, 1);
+
+  assert.equal(schema.room.udpData[port].message, '1,OFF');
+});
+
+test('an invalid port entry is skipped and the valid ones still bind', async (t) => {
+  const sockets = await setupUdp({}, fakeIo([]), ['abc', '', '70000', '0']);
+  t.after(() => sockets.forEach((socket) => socket.close()));
+
+  assert.equal(sockets.length, 1);
 });

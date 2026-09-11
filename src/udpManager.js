@@ -17,7 +17,7 @@ const setupUdpPort = (port, schema, io) =>
 
     socket.on('message', (buffer, rinfo) => {
       const { port: boundPort } = socket.address();
-      const message = buffer.toString().replace(/\r?\n$/, '');
+      const message = buffer.toString().replace(/[\r\n]+$/, '');
       seq += 1;
       debugUdp(`data received on ${boundPort} from ${rinfo.address}`, message);
 
@@ -42,13 +42,26 @@ const setupUdpPort = (port, schema, io) =>
       resolve(null);
     });
 
-    socket.bind(Number.parseInt(port, 10), '0.0.0.0');
+    socket.bind(port, '0.0.0.0');
   });
 
+const parsePort = (entry) => {
+  const trimmed = entry.trim();
+  const port = Number(trimmed);
+  if (trimmed !== '' && Number.isInteger(port) && port >= 0 && port <= 65535) {
+    return port;
+  }
+  debugUdp(`ignoring invalid port "${entry}"`);
+  return null;
+};
+
 const setupUdp = (schema, io, ports) =>
-  Promise.all(ports.map((port) => setupUdpPort(port.trim(), schema, io))).then(
-    (sockets) => sockets.filter(Boolean),
-  );
+  Promise.all(
+    ports
+      .map(parsePort)
+      .filter((port) => port !== null)
+      .map((port) => setupUdpPort(port, schema, io)),
+  ).then((sockets) => sockets.filter(Boolean));
 
 module.exports = {
   setupUdp,

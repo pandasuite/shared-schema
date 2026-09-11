@@ -259,11 +259,11 @@ Receive raw UDP messages sent by devices on the local network: RFID readers, sen
 # Single port
 shared-schema --udp-inspect 8001
 
-# Multiple ports
+# Multiple ports, as one comma-separated list
 shared-schema --udp-inspect 8001,8002
 ```
 
-The server listens on every network interface, so point the device at the IP of the machine running the server.
+The server listens on every network interface, so point the device at the IP of the machine running the server. Entries that are not a valid port number are ignored with a log line.
 
 ### Using UDP Data with PandaSuite
 
@@ -284,11 +284,13 @@ The server listens on every network interface, so point the device at the IP of 
 }
 ```
 
-- `message` is the text the device sent (a trailing line break is removed).
+- `message` is the text the device sent (trailing line breaks are removed).
 - `from` is the IP address of the sender.
-- `seq` counts the messages received on that port since the server started, so the same message sent twice is still seen twice by your project.
+- `seq` counts the messages received on that port since the server started, so the same message sent twice still changes the data.
 
-**Example**: An RFID reader sends `1,ON` when tag 1 is placed and `1,OFF` when it is removed. Use the `split` function on `udpData["8001"].message` to read the tag number and the state, then a condition to open the matching section.
+**Reacting to every message**: PandaSuite refreshes a binding when the value it points to changes. When a device sends the same text twice in a row, only `seq` changes, so bind the whole `udpData["8001"]` object (or `seq`) rather than `message` alone to react to every message, repeats included; a condition on that binding is evaluated again on each message.
+
+**Example**: An RFID reader sends `1,ON` when tag 1 is placed and `1,OFF` when it is removed. Bind `udpData["8001"]`, read the tag number and the state from its `message` with the `split` function, then use a condition to open the matching section.
 
 ## 👆 TUIO Integration
 
