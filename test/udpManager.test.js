@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const dgram = require('node:dgram');
+const { once } = require('node:events');
 
 const { setupUdp } = require('../src/udpManager');
 
@@ -10,79 +11,77 @@ const fakeIo = (emitted) => ({
   }),
 });
 
-const send = (port, text) =>
-  new Promise((resolve, reject) => {
-    const client = dgram.createSocket('udp4');
-    client.send(Buffer.from(text), port, '127.0.0.1', (err) => {
-      client.close();
-      if (err) reject(err);
-      else resolve();
-    });
-  });
+const freePort = async () => {
+  const socket = dgram.createSocket('udp4');
+  socket.bind(0, '127.0.0.1');
+  await once(socket, 'listening');
+  const { port } = socket.address();
+  socket.close();
+  return port;
+};
 
-const waitForEmits = (emitted, count, deadlineMs = 1000) =>
-  new Promise((resolve, reject) => {
-    const start = Date.now();
-    const check = () => {
-      if (emitted.length >= count) resolve();
-      else if (Date.now() - start > deadlineMs)
-        reject(new Error(`only ${emitted.length} of ${count} emits`));
-      else setTimeout(check, 5);
-    };
-    check();
-  });
+const withUdp = async (schema, io, ports, fn) => {
+  const sockets = await setupUdp(schema, io, ports);
+  try {
+    await fn(sockets);
+  } finally {
+    sockets.forEach((socket) => socket.close());
+  }
+};
 
-test('a datagram lands in every room and a repeat is still a change', async (t) => {
+// Resolves once the manager has handled the datagram: its listener was
+// attached before ours, and it emits synchronously.
+const sendAndWait = async (socket, port, text) => {
+  const handled = once(socket, 'message', {
+    signal: AbortSignal.timeout(1000),
+  });
+  const client = dgram.createSocket('udp4');
+  client.send(Buffer.from(text), port, '127.0.0.1', () => client.close());
+  await handled;
+};
+
+test('a datagram lands in every room, repeats and line breaks', async () => {
   const schema = { roomA: {}, roomB: {} };
   const emitted = [];
-  const io = fakeIo(emitted);
+  const port = await freePort();
 
-  const sockets = await setupUdp(schema, io, ['0']);
-  t.after(() => sockets.forEach((socket) => socket.close()));
-  const { port } = sockets[0].address();
+  await withUdp(schema, fakeIo(emitted), [String(port)], async ([socket]) => {
+    await sendAndWait(socket, port, '1,ON\r\n');
 
-  await send(port, '1,ON\r\n');
-  await waitForEmits(emitted, 2);
+    assert.deepEqual(schema.roomA.udpData[port], {
+      message: '1,ON',
+      from: '127.0.0.1',
+      seq: 1,
+    });
+    assert.deepEqual(schema.roomB.udpData[port], schema.roomA.udpData[port]);
+    assert.deepEqual(
+      emitted.map((e) => [e.room, e.event]),
+      [
+        ['roomA', 'schema'],
+        ['roomB', 'schema'],
+      ],
+    );
+    assert.equal(emitted[0].payload, schema.roomA);
 
-  assert.deepEqual(schema.roomA.udpData[port], {
-    message: '1,ON',
-    from: '127.0.0.1',
-    seq: 1,
+    await sendAndWait(socket, port, '1,ON');
+    assert.equal(schema.roomA.udpData[port].seq, 2);
+    assert.equal(schema.roomA.udpData[port].message, '1,ON');
+
+    await sendAndWait(socket, port, '1,OFF\r');
+    assert.equal(schema.roomA.udpData[port].message, '1,OFF');
   });
-  assert.deepEqual(schema.roomB.udpData[port], schema.roomA.udpData[port]);
-  assert.deepEqual(
-    emitted.map((e) => [e.room, e.event]),
-    [
-      ['roomA', 'schema'],
-      ['roomB', 'schema'],
-    ],
+});
+
+test('invalid port entries are skipped and the valid ones still bind', async () => {
+  const port = await freePort();
+
+  await withUdp(
+    {},
+    fakeIo([]),
+    ['abc', '', '0', '70000', '1e3', ` ${port} `],
+    async (sockets) => {
+      assert.equal(sockets.length, 1);
+      assert.equal(sockets[0].address().port, port);
+    },
   );
-  assert.equal(emitted[0].payload, schema.roomA);
-
-  await send(port, '1,ON');
-  await waitForEmits(emitted, 4);
-
-  assert.equal(schema.roomA.udpData[port].seq, 2);
-  assert.equal(schema.roomA.udpData[port].message, '1,ON');
-});
-
-test('a bare trailing CR is removed like LF and CRLF', async (t) => {
-  const schema = { room: {} };
-  const emitted = [];
-
-  const sockets = await setupUdp(schema, fakeIo(emitted), ['0']);
-  t.after(() => sockets.forEach((socket) => socket.close()));
-  const { port } = sockets[0].address();
-
-  await send(port, '1,OFF\r');
-  await waitForEmits(emitted, 1);
-
-  assert.equal(schema.room.udpData[port].message, '1,OFF');
-});
-
-test('an invalid port entry is skipped and the valid ones still bind', async (t) => {
-  const sockets = await setupUdp({}, fakeIo([]), ['abc', '', '70000', '0']);
-  t.after(() => sockets.forEach((socket) => socket.close()));
-
-  assert.equal(sockets.length, 1);
 });

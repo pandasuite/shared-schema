@@ -263,7 +263,7 @@ shared-schema --udp-inspect 8001
 shared-schema --udp-inspect 8001,8002
 ```
 
-The server listens on every network interface, so point the device at the IP of the machine running the server. Entries that are not a valid port number are ignored with a log line.
+The server listens on every network interface, so point the device at the IP of the machine running the server. Entries that are not a port number between 1 and 65535 are ignored with a log line. Port 3333 is taken by the TUIO listener, which is always on.
 
 ### Using UDP Data with PandaSuite
 
@@ -284,9 +284,11 @@ The server listens on every network interface, so point the device at the IP of 
 }
 ```
 
-- `message` is the text the device sent (trailing line breaks are removed).
+- `message` is the text the device sent, read as UTF-8 (trailing line breaks are removed).
 - `from` is the IP address of the sender.
 - `seq` counts the messages received on that port since the server started, so the same message sent twice still changes the data.
+
+The last message stays in the shared data: a client that connects later receives it right away, like serial data.
 
 **Reacting to every message**: PandaSuite refreshes a binding when the value it points to changes. When a device sends the same text twice in a row, only `seq` changes, so bind the whole `udpData["8001"]` object (or `seq`) rather than `message` alone to react to every message, repeats included; a condition on that binding is evaluated again on each message.
 
