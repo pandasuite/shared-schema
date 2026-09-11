@@ -19,6 +19,7 @@ This server is the **local version** of the PandaSuite **App-to-App component**.
 
 - **Real-time synchronization**: Share JSON data between multiple clients in real-time
 - **Serial port integration**: Connect hardware devices via serial communication
+- **Raw UDP input**: Receive messages sent by devices on the local network
 - **TUIO support**: Handle touch and tangible interface data
 - **HTTPS/WSS support**: Secure connections with SSL certificates
 - **Cross-platform**: Available as standalone executables for Windows, macOS, and Linux
@@ -33,6 +34,7 @@ This server is the **local version** of the PandaSuite **App-to-App component**.
 - [Command Line Options](#command-line-options)
 - [HTTPS Setup](#https-setup)
 - [Serial Port Integration](#serial-port-integration)
+- [UDP Integration](#udp-integration)
 - [TUIO Integration](#tuio-integration)
 - [API Documentation](#api-documentation)
 - [Development](#development)
@@ -146,6 +148,7 @@ node index.js --serial-inspect /dev/ttyUSB0,/dev/ttyACM0
 | `--update-certs`           | Download latest SSL certificates | -                     |
 | `--serial-inspect [ports]` | Enable serial port monitoring    | disabled              |
 | `--delimiter <delim>`      | Serial data delimiter            | `\n`                  |
+| `--udp-inspect <ports>`    | Enable raw UDP input on ports    | disabled              |
 | `--tuio [port]`            | Enable TUIO UDP server           | disabled              |
 | `--tuio-throttle <ms>`     | TUIO emission throttle           | 16ms                  |
 
@@ -245,6 +248,51 @@ shared-schema --serial-inspect /dev/ttyUSB0 --delimiter ","
 **Data Format**: Serial data is automatically added to the shared schema under `serialData[portName]`.
 
 **Example**: If your Arduino sends `{"temperature": 25.6}` on `/dev/ttyUSB0`, it becomes available in PandaSuite at `serialData["/dev/ttyUSB0"]`.
+
+## 📡 UDP Integration
+
+Receive raw UDP messages sent by devices on the local network: RFID readers, sensors, show controllers, or any hardware that sends a short text to a fixed IP and port.
+
+### Enable UDP Input
+
+```bash
+# Single port
+shared-schema --udp-inspect 8001
+
+# Multiple ports, as one comma-separated list
+shared-schema --udp-inspect 8001,8002
+```
+
+The server listens on every IPv4 interface, so point the device at the IP of the machine running the server. Entries that are not a port number between 1 and 65535 are ignored with a log line. Port 3333 is taken by the TUIO listener, which is always on.
+
+### Using UDP Data with PandaSuite
+
+1. **Start the server** with the port(s) your device sends to:
+   ```bash
+   ./shared-schema-macos --udp-inspect 8001
+   ```
+2. **In PandaSuite Studio**, add the **App-to-App component**, connect it to your local server and set a room name.
+3. **Access UDP data** in PandaSuite through the component data at `udpData[port]`.
+
+**Data Format**: Each message received on a port is stored under `udpData[port]`:
+
+```json
+{
+  "message": "1,ON",
+  "from": "192.168.1.100",
+  "seq": 12
+}
+```
+
+- `message` is the text the device sent, read as UTF-8 (trailing line breaks are removed).
+- `from` is the IP address of the sender.
+- `seq` counts the messages received on that port since the server started, so the same message sent twice still changes the data.
+
+The last message stays in the shared data: a client that reconnects to its room receives it right away. A room created after the message stays empty until the next one, like serial data.
+
+**Reacting to every message**: PandaSuite refreshes a binding when the value it points to changes. When a device sends the same text twice in a row, only `seq` changes, so bind the whole `udpData["8001"]` object (or `seq`) rather than `message` alone to react to every message, repeats included; a condition on that binding is evaluated again on each message.
+
+**Example**: An RFID reader sends `1,ON` when tag 1 is placed and `1,OFF` when it is removed. Bind `udpData["8001"]`, read the tag number and the state from its `message` with the `split` function, then use a condition to open the matching section.
 
 ## 👆 TUIO Integration
 

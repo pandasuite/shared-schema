@@ -24,7 +24,13 @@ jobs:
           node-version: '16'
       - name: Install dependencies
         run: npm install
+      - name: Test
+        run: npm test
+      - name: Build
+        if: github.event_name == 'pull_request'
+        run: npm run build
       - name: Generate fresh certificates
+        if: github.event_name != 'pull_request'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
@@ -46,10 +52,12 @@ jobs:
           sudo cp /etc/letsencrypt/live/shared-schema.panda.st/fullchain.pem certs/
           sudo chown $USER:$USER certs/*.pem
       - name: Configure git
+        if: github.event_name != 'pull_request'
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "team@pandasuite.com"
-      - name: Build
+      - name: Release
+        if: github.event_name != 'pull_request'
         run: npm run release
       - name: Upload certificates to release
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
