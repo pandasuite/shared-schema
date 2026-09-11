@@ -32,7 +32,12 @@ const setupUdpPort = (port, schema, io) =>
 
       for (const room in schema) {
         if (Object.prototype.hasOwnProperty.call(schema, room)) {
-          if (!schema[room].udpData) {
+          const { udpData } = schema[room];
+          if (
+            !udpData ||
+            typeof udpData !== 'object' ||
+            Array.isArray(udpData)
+          ) {
             schema[room].udpData = {};
           }
           schema[room].udpData[port] = {

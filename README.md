@@ -288,7 +288,7 @@ The server listens on every IPv4 interface, so point the device at the IP of the
 - `from` is the IP address of the sender.
 - `seq` counts the messages received on that port since the server started, so the same message sent twice still changes the data.
 
-The last message stays in the shared data: a client that connects later receives it right away, like serial data.
+The last message stays in the shared data: a client that reconnects to its room receives it right away. A room created after the message stays empty until the next one, like serial data.
 
 **Reacting to every message**: PandaSuite refreshes a binding when the value it points to changes. When a device sends the same text twice in a row, only `seq` changes, so bind the whole `udpData["8001"]` object (or `seq`) rather than `message` alone to react to every message, repeats included; a condition on that binding is evaluated again on each message.
 

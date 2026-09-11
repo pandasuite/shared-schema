@@ -69,6 +69,10 @@ test('a datagram lands in every room, repeats and line breaks', async () => {
 
     await sendAndWait(socket, port, '1,OFF\r');
     assert.equal(schema.roomA.udpData[port].message, '1,OFF');
+
+    schema.roomA.udpData = [];
+    await sendAndWait(socket, port, '2,ON');
+    assert.deepEqual(Object.keys(schema.roomA.udpData), [String(port)]);
   });
 });
 
