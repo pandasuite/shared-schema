@@ -1,0 +1,55 @@
+/* eslint-disable no-param-reassign */
+const dgram = require('dgram');
+const debugUdp = require('debug')('UDP');
+
+debugUdp.enabled = true;
+
+const setupUdpPort = (port, schema, io) =>
+  new Promise((resolve) => {
+    const socket = dgram.createSocket('udp4');
+    let seq = 0;
+
+    socket.on('listening', () => {
+      const { address, port: boundPort } = socket.address();
+      debugUdp(`listening on ${address}:${boundPort}`);
+      resolve(socket);
+    });
+
+    socket.on('message', (buffer, rinfo) => {
+      const { port: boundPort } = socket.address();
+      const message = buffer.toString().replace(/\r?\n$/, '');
+      seq += 1;
+      debugUdp(`data received on ${boundPort} from ${rinfo.address}`, message);
+
+      for (const room in schema) {
+        if (Object.prototype.hasOwnProperty.call(schema, room)) {
+          if (!schema[room].udpData) {
+            schema[room].udpData = {};
+          }
+          schema[room].udpData[boundPort] = {
+            message,
+            from: rinfo.address,
+            seq,
+          };
+          io.to(room).emit('schema', schema[room]);
+        }
+      }
+    });
+
+    socket.on('error', (err) => {
+      debugUdp(`error on ${port}`, err.message);
+      socket.close();
+      resolve(null);
+    });
+
+    socket.bind(Number.parseInt(port, 10), '0.0.0.0');
+  });
+
+const setupUdp = (schema, io, ports) =>
+  Promise.all(ports.map((port) => setupUdpPort(port.trim(), schema, io))).then(
+    (sockets) => sockets.filter(Boolean),
+  );
+
+module.exports = {
+  setupUdp,
+};

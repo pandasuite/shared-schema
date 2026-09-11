@@ -18,6 +18,11 @@ program
     undefined,
   )
   .option('-d, --delimiter <delimiter>', 'delimiter for serial port data', '\n')
+  .option(
+    '-u, --udp-inspect <ports>',
+    'enable raw udp inspection on a list of ports',
+    undefined,
+  )
   .option('-t, --tuio [port]', 'enable tuio udp server', 3333)
   .option(
     '--tuio-throttle <ms>',
@@ -32,8 +37,14 @@ program
 program.parse();
 
 let { key: keyPath, cert: certPath } = program.opts();
-const { serialInspect, delimiter, tuio, tuioThrottle, updateCerts } =
-  program.opts();
+const {
+  serialInspect,
+  delimiter,
+  udpInspect,
+  tuio,
+  tuioThrottle,
+  updateCerts,
+} = program.opts();
 
 const { Server } = require('socket.io');
 
@@ -48,6 +59,7 @@ const {
 } = require('./src/certManager');
 const { setupSerialPorts } = require('./src/serialManager');
 const { setupTuio } = require('./src/tuioManager');
+const { setupUdp } = require('./src/udpManager');
 
 // Handle certificate update command
 if (updateCerts) {
@@ -202,6 +214,10 @@ printAdressesFromInterfaces();
 if (serialInspect !== undefined) {
   const ports = serialInspect.split(',');
   setupSerialPorts(schema, io, delimiter, ports);
+}
+
+if (udpInspect !== undefined) {
+  setupUdp(schema, io, udpInspect.split(','));
 }
 
 if (tuio !== undefined) {
