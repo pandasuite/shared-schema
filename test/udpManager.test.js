@@ -72,13 +72,13 @@ test('a datagram lands in every room, repeats and line breaks', async () => {
   });
 });
 
-test('invalid port entries are skipped and the valid ones still bind', async () => {
+test('invalid and duplicate port entries are skipped, the valid ones bind', async () => {
   const port = await freePort();
 
   await withUdp(
     {},
     fakeIo([]),
-    ['abc', '', '0', '70000', '1e3', ` ${port} `],
+    ['abc', '', '0', '70000', '1e3', ` ${port} `, String(port)],
     async (sockets) => {
       assert.equal(sockets.length, 1);
       assert.equal(sockets[0].address().port, port);

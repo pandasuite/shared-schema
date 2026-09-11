@@ -60,10 +60,9 @@ const parsePort = (entry) => {
 
 const setupUdp = (schema, io, ports) =>
   Promise.all(
-    ports
-      .map(parsePort)
-      .filter((port) => port !== null)
-      .map((port) => setupUdpPort(port, schema, io)),
+    [...new Set(ports.map(parsePort).filter((port) => port !== null))].map(
+      (port) => setupUdpPort(port, schema, io),
+    ),
   ).then((sockets) => sockets.filter(Boolean));
 
 module.exports = {

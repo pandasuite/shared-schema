@@ -263,7 +263,7 @@ shared-schema --udp-inspect 8001
 shared-schema --udp-inspect 8001,8002
 ```
 
-The server listens on every network interface, so point the device at the IP of the machine running the server. Entries that are not a port number between 1 and 65535 are ignored with a log line. Port 3333 is taken by the TUIO listener, which is always on.
+The server listens on every IPv4 interface, so point the device at the IP of the machine running the server. Entries that are not a port number between 1 and 65535 are ignored with a log line. Port 3333 is taken by the TUIO listener, which is always on.
 
 ### Using UDP Data with PandaSuite
 
